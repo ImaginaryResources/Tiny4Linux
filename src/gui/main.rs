@@ -30,6 +30,8 @@ enum Message {
     ChangePresetPosition(i8),
     ChangeHDR(bool),
     ChangeExposure(ExposureMode),
+    ChangeZoom(i32),
+    ChangeZoomText(String),
     ChangeDebugging(bool),
     TextInput(String),
     TextInput02(String),
@@ -48,6 +50,10 @@ struct MainPanel {
     tracking: AIMode,
     tracking_speed: TrackingSpeed,
     hdr_on: bool,
+    zoom: Option<i32>,
+    zoom_min: i32,
+    zoom_max: i32,
+    zoom_text: String,
     debugging_on: bool,
     text_input: String,
     text_input_02: String,
@@ -62,6 +68,9 @@ impl MainPanel {
             .and_then(|c| c.get_status().ok())
             .unwrap_or_else(|| tiny4linux::CameraStatus::default());
 
+        let zoom_range = camera.as_ref().and_then(|c| c.get_zoom_range().ok());
+        let zoom = camera.as_ref().and_then(|c| c.get_zoom_absolute().ok());
+
         (
             MainPanel {
                 camera,
@@ -71,6 +80,10 @@ impl MainPanel {
                 tracking: status.ai_mode,
                 tracking_speed: status.speed,
                 hdr_on: status.hdr_on,
+                zoom,
+                zoom_min: zoom_range.map(|r| r.0).unwrap_or(0),
+                zoom_max: zoom_range.map(|r| r.1).unwrap_or(0),
+                zoom_text: zoom.map(|z| z.to_string()).unwrap_or_default(),
                 debugging_on: false,
                 text_input: String::new(),
                 text_input_02: String::new(),
@@ -151,6 +164,16 @@ impl MainPanel {
             }
             Message::ChangeExposure(mode) => {
                 camera.set_exposure_mode(mode).unwrap();
+                Task::none()
+            }
+            Message::ChangeZoom(value) => {
+                self.zoom = Some(value);
+                self.zoom_text = value.to_string();
+                camera.set_zoom_absolute(value).unwrap();
+                Task::none()
+            }
+            Message::ChangeZoomText(s) => {
+                self.zoom_text = s;
                 Task::none()
             }
             Message::ChangeDebugging(new_mode) => {

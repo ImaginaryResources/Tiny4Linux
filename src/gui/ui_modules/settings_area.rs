@@ -9,8 +9,8 @@ use iced::Length;
 use iced::alignment::{Horizontal, Vertical};
 use iced::widget::tooltip::Position;
 use iced::widget::{
-    Container, Row, button, column, container, horizontal_rule, horizontal_space, row, text,
-    tooltip,
+    Container, Row, Slider, button, column, container, horizontal_rule, horizontal_space, row,
+    text, text_input, tooltip,
 };
 use iced_font_awesome::fa_icon_solid;
 use rust_i18n::t;
@@ -27,6 +27,11 @@ pub fn settings_area(app: &MainPanel) -> Container<'static, Message> {
             row![hdr(app.hdr_on), exposure_mode()]
                 .spacing(10)
                 .align_y(Vertical::Center),
+            if app.zoom.is_some() {
+                zoom(app)
+            } else {
+                container(column![])
+            }
         ]
         .spacing(20),
     )
@@ -149,5 +154,38 @@ fn exposure_mode() -> Container<'static, Message> {
         .align_x(Horizontal::Center)
         .width(Length::Fill)
         .spacing(5),
+    )
+}
+
+fn zoom(app: &MainPanel) -> Container<'static, Message> {
+    let current = app.zoom.unwrap_or(app.zoom_min);
+    let set_zoom = app.zoom_text.parse().ok().map(Message::ChangeZoom);
+
+    container(
+        column![
+            text(format!("{}:", t!("shared.info.zoom"))),
+            row![
+                text(app.zoom_min.to_string()),
+                Slider::new(app.zoom_min..=app.zoom_max, current, Message::ChangeZoom)
+                    .step(1)
+                    .width(Length::Fill),
+                text(app.zoom_max.to_string())
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+            row![
+                text_input(t!("gui.text.zoom.placeholder").as_ref(), &app.zoom_text)
+                    .on_input(Message::ChangeZoomText)
+                    .on_submit_maybe(set_zoom.clone())
+                    .width(Length::FillPortion(3)),
+                button(text(t!("gui.text.zoom.apply")))
+                    .on_press_maybe(set_zoom)
+                    .width(Length::FillPortion(1)),
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+        ]
+        .spacing(10)
+        .width(Length::Fill),
     )
 }

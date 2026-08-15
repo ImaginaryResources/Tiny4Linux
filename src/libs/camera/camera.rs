@@ -58,6 +58,9 @@ pub trait Tiny2Camera {
     fn set_tracking_speed(&self, speed: TrackingSpeed) -> Result<(), T4lError>;
     fn set_hdr_mode(&self, mode: bool) -> Result<(), T4lError>;
     fn set_exposure_mode(&self, mode: ExposureMode) -> Result<(), T4lError>;
+    fn get_zoom_absolute(&self) -> Result<i32, T4lError>;
+    fn set_zoom_absolute(&self, value: i32) -> Result<(), T4lError>;
+    fn get_zoom_range(&self) -> Result<(i32, i32), T4lError>;
     fn set_debugging(&mut self, debugging: bool);
 }
 
@@ -121,5 +124,17 @@ impl Tiny2Camera for Camera {
 
     fn set_debugging(&mut self, debugging: bool) {
         self.set_debugging(debugging);
+    }
+
+    fn get_zoom_absolute(&self) -> Result<i32, T4lError> {
+        self.transport.get_zoom_absolute()
+    }
+
+    fn set_zoom_absolute(&self, value: i32) -> Result<(), T4lError> {
+        self.transport.set_zoom_absolute(value)
+    }
+
+    fn get_zoom_range(&self) -> Result<(i32, i32), T4lError> {
+        self.transport.get_zoom_range()
     }
 }

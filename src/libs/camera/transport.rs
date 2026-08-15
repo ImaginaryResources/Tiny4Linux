@@ -239,4 +239,22 @@ impl CameraTransport {
     fn io(&self, unit: u8, selector: u8, query: u8, data: &mut [u8]) -> Result<(), Errno> {
         self.handle.io(unit, selector, query, data)
     }
+
+    pub fn get_zoom_absolute(&self) -> Result<i32, T4lError> {
+        self.handle
+            .get_zoom_absolute()
+            .map_err(|e| T4lError::USBIOError(e.0))
+    }
+
+    pub fn set_zoom_absolute(&self, value: i32) -> Result<(), T4lError> {
+        self.handle
+            .set_zoom_absolute(value)
+            .map_err(|e| T4lError::USBIOError(e.0))
+    }
+
+    pub fn get_zoom_range(&self) -> Result<(i32, i32), T4lError> {
+        self.handle
+            .get_zoom_range()
+            .map_err(|e| T4lError::USBIOError(e.0))
+    }
 }

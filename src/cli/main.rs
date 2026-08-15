@@ -53,6 +53,8 @@ enum Command {
         #[command(subcommand)]
         exposure_mode: Option<ExposureArg>,
     },
+    #[command(about = t!("cli.help.zoom"))]
+    Zoom { value: Option<i32> },
     #[command(about = t!("cli.help.info"))]
     Info,
     #[command(about = t!("cli.help.version"))]
@@ -128,6 +130,7 @@ fn main() {
         Command::Preset { position_id } => evaluate_preset_arg(*position_id, camera),
         Command::Hdr { hdr_mode } => evaluate_hdr_arg(hdr_mode.clone(), camera),
         Command::Exposure { exposure_mode } => evaluate_exposure_arg(exposure_mode.clone(), camera),
+        Command::Zoom { value } => evaluate_zoom_arg(*value, camera),
         Command::Info => {
             let info = camera.get_status();
 
@@ -371,6 +374,24 @@ fn evaluate_speed_arg(speed: Option<TrackingSpeedArg>, camera: Camera) {
                 .unwrap();
 
             evaluate_speed_arg(Option::from(options[selection].result.clone()), camera);
+        }
+    }
+}
+
+fn evaluate_zoom_arg(value: Option<i32>, camera: Camera) {
+    match value {
+        Some(value) => {
+            println!("{}", t!("cli.zoom.response_to_set", value = value));
+            camera.set_zoom_absolute(value).unwrap();
+        }
+        None => {
+            let (min, max) = camera.get_zoom_range().unwrap();
+            let current = camera.get_zoom_absolute().unwrap();
+
+            println!(
+                "{}",
+                t!("cli.zoom.current", current = current, min = min, max = max)
+            );
         }
     }
 }

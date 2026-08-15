@@ -18,6 +18,7 @@
       "sleep_mode": "Sleep Mode",
       "tracking": "Tracking",
       "tracking_speed": "Tracking Speed",
+      "zoom": "Zoom",
       "t4l_version": "T4L Version"
     }
   },
@@ -46,6 +47,10 @@
         "clear_x": "Clear %{to_clear}",
         "0x02_hex_string": "0x02 hex string",
         "0x06_hex_string": "0x06 hex string"
+      },
+      "zoom": {
+        "placeholder": "Enter zoom value",
+        "apply": "Set"
       }
     },
     "tooltips": {
@@ -112,6 +117,10 @@
       "option_on": "HDR on",
       "option_off": "HDR off"
     },
+    "zoom": {
+      "response_to_set": "Setting the camera zoom to %{value}",
+      "current": "Current zoom: %{current} (range %{min}-%{max})"
+    },
     "exposure": {
       "response_to_manual": "Setting exposure mode to manual",
       "response_to_global": "Setting exposure mode to global",
@@ -133,6 +142,7 @@
       "preset": "Sets the camera to a specific preset position previously defined in OBSBOT Center",
       "hdr": "Controls the HDR-mode of the camera",
       "exposure": "Controls the exposure-mode of the camera",
+      "zoom": "Controls the zoom of the camera",
       "info": "Displays information about the current state of the camera",
       "version": "Displays the version of the CLI-tool",
       "completions": "Generates shell-completion scripts for the CLI-tool",

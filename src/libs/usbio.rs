@@ -14,6 +14,9 @@ use std::str;
 pub trait UvcUsbIo {
     fn info(&self) -> Result<(), Errno>;
     fn io(&self, unit: u8, selector: u8, query: u8, data: &mut [u8]) -> Result<(), Errno>;
+    fn get_zoom_absolute(&self) -> Result<i32, Errno>;
+    fn set_zoom_absolute(&self, value: i32) -> Result<(), Errno>;
+    fn get_zoom_range(&self) -> Result<(i32, i32), Errno>;
 }
 
 #[derive(Debug)]
@@ -58,6 +61,50 @@ impl UvcUsbIo for CameraHandle {
             match uvcioc_ctrl_query(dev.as_raw_fd(), &mut [query]) {
                 Ok(_) => Ok(()),
                 _ => Err(Errno(Error::last_raw())),
+            }
+        }
+    }
+
+    fn get_zoom_absolute(&self) -> Result<i32, Errno> {
+        let control = v4l2_control {
+            id: V4L2_CID_ZOOM_ABSOLUTE,
+            value: 0,
+        };
+
+        unsafe {
+            match ioctl_videoc_g_ctrl(self.0.as_raw_fd(), &mut [control]) {
+                Ok(_) => Ok(control.value),
+                _ => Err(Errno(Error::last_raw())),
+            }
+        }
+    }
+
+    fn set_zoom_absolute(&self, value: i32) -> Result<(), Errno> {
+        let control = v4l2_control {
+            id: V4L2_CID_ZOOM_ABSOLUTE,
+            value,
+        };
+
+        unsafe {
+            match ioctl_videoc_s_ctrl(self.0.as_raw_fd(), &mut [control]) {
+                Ok(_) => Ok(()),
+                _ => Err(Errno(Error::last_raw())),
+            }
+        }
+    }
+
+    fn get_zoom_range(&self) -> Result<(i32, i32), Errno> {
+        let query = v4l2_queryctrl {
+            id: V4L2_CID_ZOOM_ABSOLUTE,
+            ..Default::default()
+        };
+
+        unsafe {
+            match ioctl_videoc_queryctrl(self.0.as_raw_fd(), &mut [query]) {
+                Ok(_) if query.maximum > query.minimum => Ok((query.minimum, query.maximum)),
+                // The uvcvideo driver reports a degenerate range (0..0) for the
+                // OBSBOT zoom control, so fall back to a 0-100 scale.
+                _ => Ok((0, 100)),
             }
         }
     }
@@ -133,6 +180,56 @@ ioctl_read_buf!(
     VIDIOC_QUERYCAP_MAGIC,
     VIDIOC_QUERYCAP_QUERY_MESSAGE,
     v4l2_capability
+);
+
+/* Standard UVC Camera-Terminal zoom control (V4L2_CID_ZOOM_ABSOLUTE,
+ * defined in linux/v4l2-controls.h). Camera Terminal controls are not
+ * reachable via UVCIOC_CTRL_QUERY, so V4L2 control ioctls are used. */
+const V4L2_CID_ZOOM_ABSOLUTE: u32 = 0x009A_090D;
+
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Copy, Clone, Default, Debug)]
+pub struct v4l2_control {
+    id: u32,
+    value: i32,
+}
+
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Copy, Clone, Default, Debug)]
+pub struct v4l2_queryctrl {
+    id: u32,
+    ctrl_type: u32,
+    name: [u8; 32],
+    minimum: i32,
+    maximum: i32,
+    step: i32,
+    default_value: i32,
+    flags: u32,
+    reserved: [u32; 2],
+}
+
+const VIDIOC_G_CTRL_QUERY_MESSAGE: u8 = 27; // Defined in linux/videodev2.h
+const VIDIOC_S_CTRL_QUERY_MESSAGE: u8 = 28; // Defined in linux/videodev2.h
+const VIDIOC_QUERYCTRL_QUERY_MESSAGE: u8 = 36; // Defined in linux/videodev2.h
+ioctl_readwrite_buf!(
+    ioctl_videoc_g_ctrl,
+    VIDIOC_QUERYCAP_MAGIC,
+    VIDIOC_G_CTRL_QUERY_MESSAGE,
+    v4l2_control
+);
+ioctl_readwrite_buf!(
+    ioctl_videoc_s_ctrl,
+    VIDIOC_QUERYCAP_MAGIC,
+    VIDIOC_S_CTRL_QUERY_MESSAGE,
+    v4l2_control
+);
+ioctl_readwrite_buf!(
+    ioctl_videoc_queryctrl,
+    VIDIOC_QUERYCAP_MAGIC,
+    VIDIOC_QUERYCTRL_QUERY_MESSAGE,
+    v4l2_queryctrl
 );
 
 #[allow(non_camel_case_types)]
