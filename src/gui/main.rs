@@ -32,6 +32,10 @@ enum Message {
     ChangeExposure(ExposureMode),
     ChangeZoom(i32),
     ChangeZoomText(String),
+    ChangePan(i32),
+    ChangePanText(String),
+    ChangeTilt(i32),
+    ChangeTiltText(String),
     ChangeDebugging(bool),
     TextInput(String),
     TextInput02(String),
@@ -54,6 +58,14 @@ struct MainPanel {
     zoom_min: i32,
     zoom_max: i32,
     zoom_text: String,
+    pan: Option<i32>,
+    pan_min: i32,
+    pan_max: i32,
+    pan_text: String,
+    tilt: Option<i32>,
+    tilt_min: i32,
+    tilt_max: i32,
+    tilt_text: String,
     debugging_on: bool,
     text_input: String,
     text_input_02: String,
@@ -71,6 +83,12 @@ impl MainPanel {
         let zoom_range = camera.as_ref().and_then(|c| c.get_zoom_range().ok());
         let zoom = camera.as_ref().and_then(|c| c.get_zoom_absolute().ok());
 
+        let pan_range = camera.as_ref().and_then(|c| c.get_pan_range().ok());
+        let pan = camera.as_ref().and_then(|c| c.get_pan_absolute().ok());
+
+        let tilt_range = camera.as_ref().and_then(|c| c.get_tilt_range().ok());
+        let tilt = camera.as_ref().and_then(|c| c.get_tilt_absolute().ok());
+
         (
             MainPanel {
                 camera,
@@ -84,6 +102,14 @@ impl MainPanel {
                 zoom_min: zoom_range.map(|r| r.0).unwrap_or(0),
                 zoom_max: zoom_range.map(|r| r.1).unwrap_or(0),
                 zoom_text: zoom.map(|z| z.to_string()).unwrap_or_default(),
+                pan,
+                pan_min: pan_range.map(|r| r.0).unwrap_or(0),
+                pan_max: pan_range.map(|r| r.1).unwrap_or(0),
+                pan_text: pan.map(|p| p.to_string()).unwrap_or_default(),
+                tilt,
+                tilt_min: tilt_range.map(|r| r.0).unwrap_or(0),
+                tilt_max: tilt_range.map(|r| r.1).unwrap_or(0),
+                tilt_text: tilt.map(|t| t.to_string()).unwrap_or_default(),
                 debugging_on: false,
                 text_input: String::new(),
                 text_input_02: String::new(),
@@ -174,6 +200,28 @@ impl MainPanel {
             }
             Message::ChangeZoomText(s) => {
                 self.zoom_text = s;
+                Task::none()
+            }
+            Message::ChangePan(value) => {
+                let value = value.clamp(self.pan_min, self.pan_max);
+                self.pan = Some(value);
+                self.pan_text = value.to_string();
+                camera.set_pan_absolute(value).unwrap();
+                Task::none()
+            }
+            Message::ChangePanText(s) => {
+                self.pan_text = s;
+                Task::none()
+            }
+            Message::ChangeTilt(value) => {
+                let value = value.clamp(self.tilt_min, self.tilt_max);
+                self.tilt = Some(value);
+                self.tilt_text = value.to_string();
+                camera.set_tilt_absolute(value).unwrap();
+                Task::none()
+            }
+            Message::ChangeTiltText(s) => {
+                self.tilt_text = s;
                 Task::none()
             }
             Message::ChangeDebugging(new_mode) => {

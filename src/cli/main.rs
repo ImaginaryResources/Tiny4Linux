@@ -55,6 +55,10 @@ enum Command {
     },
     #[command(about = t!("cli.help.zoom"))]
     Zoom { value: Option<i32> },
+    #[command(about = t!("cli.help.pan"))]
+    Pan { value: Option<i32> },
+    #[command(about = t!("cli.help.tilt"))]
+    Tilt { value: Option<i32> },
     #[command(about = t!("cli.help.info"))]
     Info,
     #[command(about = t!("cli.help.version"))]
@@ -131,6 +135,8 @@ fn main() {
         Command::Hdr { hdr_mode } => evaluate_hdr_arg(hdr_mode.clone(), camera),
         Command::Exposure { exposure_mode } => evaluate_exposure_arg(exposure_mode.clone(), camera),
         Command::Zoom { value } => evaluate_zoom_arg(*value, camera),
+        Command::Pan { value } => evaluate_pan_arg(*value, camera),
+        Command::Tilt { value } => evaluate_tilt_arg(*value, camera),
         Command::Info => {
             let info = camera.get_status();
 
@@ -391,6 +397,42 @@ fn evaluate_zoom_arg(value: Option<i32>, camera: Camera) {
             println!(
                 "{}",
                 t!("cli.zoom.current", current = current, min = min, max = max)
+            );
+        }
+    }
+}
+
+fn evaluate_pan_arg(value: Option<i32>, camera: Camera) {
+    match value {
+        Some(value) => {
+            println!("{}", t!("cli.pan.response_to_set", value = value));
+            camera.set_pan_absolute(value).unwrap();
+        }
+        None => {
+            let (min, max) = camera.get_pan_range().unwrap();
+            let current = camera.get_pan_absolute().unwrap();
+
+            println!(
+                "{}",
+                t!("cli.pan.current", current = current, min = min, max = max)
+            );
+        }
+    }
+}
+
+fn evaluate_tilt_arg(value: Option<i32>, camera: Camera) {
+    match value {
+        Some(value) => {
+            println!("{}", t!("cli.tilt.response_to_set", value = value));
+            camera.set_tilt_absolute(value).unwrap();
+        }
+        None => {
+            let (min, max) = camera.get_tilt_range().unwrap();
+            let current = camera.get_tilt_absolute().unwrap();
+
+            println!(
+                "{}",
+                t!("cli.tilt.current", current = current, min = min, max = max)
             );
         }
     }

@@ -14,6 +14,9 @@ use std::str;
 pub trait UvcUsbIo {
     fn info(&self) -> Result<(), Errno>;
     fn io(&self, unit: u8, selector: u8, query: u8, data: &mut [u8]) -> Result<(), Errno>;
+    fn get_control(&self, id: u32) -> Result<i32, Errno>;
+    fn set_control(&self, id: u32, value: i32) -> Result<(), Errno>;
+    fn get_control_range(&self, id: u32) -> Result<(i32, i32), Errno>;
     fn get_zoom_absolute(&self) -> Result<i32, Errno>;
     fn set_zoom_absolute(&self, value: i32) -> Result<(), Errno>;
     fn get_zoom_range(&self) -> Result<(i32, i32), Errno>;
@@ -65,11 +68,8 @@ impl UvcUsbIo for CameraHandle {
         }
     }
 
-    fn get_zoom_absolute(&self) -> Result<i32, Errno> {
-        let control = v4l2_control {
-            id: V4L2_CID_ZOOM_ABSOLUTE,
-            value: 0,
-        };
+    fn get_control(&self, id: u32) -> Result<i32, Errno> {
+        let control = v4l2_control { id, value: 0 };
 
         unsafe {
             match ioctl_videoc_g_ctrl(self.0.as_raw_fd(), &mut [control]) {
@@ -79,11 +79,8 @@ impl UvcUsbIo for CameraHandle {
         }
     }
 
-    fn set_zoom_absolute(&self, value: i32) -> Result<(), Errno> {
-        let control = v4l2_control {
-            id: V4L2_CID_ZOOM_ABSOLUTE,
-            value,
-        };
+    fn set_control(&self, id: u32, value: i32) -> Result<(), Errno> {
+        let control = v4l2_control { id, value };
 
         unsafe {
             match ioctl_videoc_s_ctrl(self.0.as_raw_fd(), &mut [control]) {
@@ -93,19 +90,34 @@ impl UvcUsbIo for CameraHandle {
         }
     }
 
-    fn get_zoom_range(&self) -> Result<(i32, i32), Errno> {
+    fn get_control_range(&self, id: u32) -> Result<(i32, i32), Errno> {
         let query = v4l2_queryctrl {
-            id: V4L2_CID_ZOOM_ABSOLUTE,
+            id,
             ..Default::default()
         };
 
         unsafe {
             match ioctl_videoc_queryctrl(self.0.as_raw_fd(), &mut [query]) {
-                Ok(_) if query.maximum > query.minimum => Ok((query.minimum, query.maximum)),
-                // The uvcvideo driver reports a degenerate range (0..0) for the
-                // OBSBOT zoom control, so fall back to a 0-100 scale.
-                _ => Ok((0, 100)),
+                Ok(_) => Ok((query.minimum, query.maximum)),
+                _ => Err(Errno(Error::last_raw())),
             }
+        }
+    }
+
+    fn get_zoom_absolute(&self) -> Result<i32, Errno> {
+        self.get_control(V4L2_CID_ZOOM_ABSOLUTE)
+    }
+
+    fn set_zoom_absolute(&self, value: i32) -> Result<(), Errno> {
+        self.set_control(V4L2_CID_ZOOM_ABSOLUTE, value)
+    }
+
+    fn get_zoom_range(&self) -> Result<(i32, i32), Errno> {
+        match self.get_control_range(V4L2_CID_ZOOM_ABSOLUTE) {
+            Ok((min, max)) if max > min => Ok((min, max)),
+            // The uvcvideo driver reports a degenerate range (0..0) for the
+            // OBSBOT zoom control, so fall back to a 0-100 scale.
+            _ => Ok((0, 100)),
         }
     }
 }
@@ -186,6 +198,8 @@ ioctl_read_buf!(
  * defined in linux/v4l2-controls.h). Camera Terminal controls are not
  * reachable via UVCIOC_CTRL_QUERY, so V4L2 control ioctls are used. */
 const V4L2_CID_ZOOM_ABSOLUTE: u32 = 0x009A_090D;
+pub const V4L2_CID_PAN_ABSOLUTE: u32 = 0x009A_0908;
+pub const V4L2_CID_TILT_ABSOLUTE: u32 = 0x009A_0909;
 
 #[allow(non_camel_case_types)]
 #[repr(C)]

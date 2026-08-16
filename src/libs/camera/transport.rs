@@ -257,4 +257,22 @@ impl CameraTransport {
             .get_zoom_range()
             .map_err(|e| T4lError::USBIOError(e.0))
     }
+
+    pub fn get_control(&self, id: u32) -> Result<i32, T4lError> {
+        self.handle
+            .get_control(id)
+            .map_err(|e| T4lError::USBIOError(e.0))
+    }
+
+    pub fn set_control(&self, id: u32, value: i32) -> Result<(), T4lError> {
+        self.handle
+            .set_control(id, value)
+            .map_err(|e| T4lError::USBIOError(e.0))
+    }
+
+    pub fn get_control_range(&self, id: u32) -> Result<(i32, i32), T4lError> {
+        self.handle
+            .get_control_range(id)
+            .map_err(|e| T4lError::USBIOError(e.0))
+    }
 }

@@ -31,6 +31,11 @@ pub fn settings_area(app: &MainPanel) -> Container<'static, Message> {
                 zoom(app)
             } else {
                 container(column![])
+            },
+            if app.pan.is_some() && app.tilt.is_some() {
+                movement(app)
+            } else {
+                container(column![])
             }
         ]
         .spacing(20),
@@ -180,6 +185,70 @@ fn zoom(app: &MainPanel) -> Container<'static, Message> {
                     .width(Length::FillPortion(3)),
                 button(text(t!("gui.text.zoom.apply")))
                     .on_press_maybe(set_zoom)
+                    .width(Length::FillPortion(1)),
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+        ]
+        .spacing(10)
+        .width(Length::Fill),
+    )
+}
+
+// Pan and tilt positions are expressed in 1/3600 degree units (arc-seconds).
+const PAN_TILT_STEP: i32 = 3600;
+
+fn movement(app: &MainPanel) -> Container<'static, Message> {
+    let pan = app.pan.unwrap_or(0);
+    let tilt = app.tilt.unwrap_or(0);
+    let set_pan = app.pan_text.parse().ok().map(Message::ChangePan);
+    let set_tilt = app.tilt_text.parse().ok().map(Message::ChangeTilt);
+
+    container(
+        column![
+            text(format!("{}:", t!("shared.info.movement"))),
+            text(format!("{}:", t!("shared.info.pan"))),
+            row![
+                button(fa_icon_solid("arrow-left"))
+                    .on_press(Message::ChangePan(pan - PAN_TILT_STEP)),
+                Slider::new(app.pan_min..=app.pan_max, pan, Message::ChangePan)
+                    .step(1)
+                    .width(Length::Fill),
+                button(fa_icon_solid("arrow-right"))
+                    .on_press(Message::ChangePan(pan + PAN_TILT_STEP)),
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+            row![
+                text_input(t!("gui.text.pan.placeholder").as_ref(), &app.pan_text)
+                    .on_input(Message::ChangePanText)
+                    .on_submit_maybe(set_pan.clone())
+                    .width(Length::FillPortion(3)),
+                button(text(t!("gui.text.pan.apply")))
+                    .on_press_maybe(set_pan)
+                    .width(Length::FillPortion(1)),
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+            text(format!("{}:", t!("shared.info.tilt"))),
+            row![
+                button(fa_icon_solid("arrow-down"))
+                    .on_press(Message::ChangeTilt(tilt - PAN_TILT_STEP)),
+                Slider::new(app.tilt_min..=app.tilt_max, tilt, Message::ChangeTilt)
+                    .step(1)
+                    .width(Length::Fill),
+                button(fa_icon_solid("arrow-up"))
+                    .on_press(Message::ChangeTilt(tilt + PAN_TILT_STEP)),
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+            row![
+                text_input(t!("gui.text.tilt.placeholder").as_ref(), &app.tilt_text)
+                    .on_input(Message::ChangeTiltText)
+                    .on_submit_maybe(set_tilt.clone())
+                    .width(Length::FillPortion(3)),
+                button(text(t!("gui.text.tilt.apply")))
+                    .on_press_maybe(set_tilt)
                     .width(Length::FillPortion(1)),
             ]
             .spacing(10)
