@@ -43,6 +43,14 @@ enum Command {
     },
     #[command(alias = "position", subcommand_required = false, about = t!("cli.help.preset"))]
     Preset { position_id: Option<i8> },
+    #[command(about = t!("cli.help.preset_save"))]
+    PresetSave { name: String },
+    #[command(about = t!("cli.help.preset_recall"))]
+    PresetRecall { name: String },
+    #[command(about = t!("cli.help.preset_list"))]
+    PresetList,
+    #[command(about = t!("cli.help.preset_delete"))]
+    PresetDelete { name: String },
     #[command(about = t!("cli.help.hdr"))]
     Hdr {
         #[command(subcommand)]
@@ -132,6 +140,10 @@ fn main() {
         Command::Tracking { tracking_mode } => evaluate_tracking_arg(tracking_mode.clone(), camera),
         Command::Speed { speed } => evaluate_speed_arg(speed.clone(), camera),
         Command::Preset { position_id } => evaluate_preset_arg(*position_id, camera),
+        Command::PresetSave { name } => evaluate_preset_save_arg(name.clone(), camera),
+        Command::PresetRecall { name } => evaluate_preset_recall_arg(name.clone(), camera),
+        Command::PresetList => evaluate_preset_list_arg(camera),
+        Command::PresetDelete { name } => evaluate_preset_delete_arg(name.clone(), camera),
         Command::Hdr { hdr_mode } => evaluate_hdr_arg(hdr_mode.clone(), camera),
         Command::Exposure { exposure_mode } => evaluate_exposure_arg(exposure_mode.clone(), camera),
         Command::Zoom { value } => evaluate_zoom_arg(*value, camera),
@@ -464,6 +476,55 @@ fn evaluate_preset_arg(position_id: Option<i8>, camera: Camera) {
     camera
         .goto_preset_position(position_id.unwrap() - 1)
         .unwrap();
+}
+
+fn evaluate_preset_save_arg(name: String, camera: Camera) {
+    match camera.save_custom_preset(&name) {
+        Ok(_) => println!("{}", t!("cli.preset_save.response_to_save", name = name)),
+        Err(e) => println!("{}", e),
+    }
+}
+
+fn evaluate_preset_recall_arg(name: String, camera: Camera) {
+    match camera.recall_custom_preset(&name) {
+        Ok(_) => println!(
+            "{}",
+            t!("cli.preset_recall.response_to_recall", name = name)
+        ),
+        Err(e) => println!("{}", e),
+    }
+}
+
+fn evaluate_preset_list_arg(camera: Camera) {
+    let presets = camera.get_custom_presets();
+
+    if presets.is_empty() {
+        println!("{}", t!("cli.preset_list.empty"));
+        return;
+    }
+
+    for preset in presets {
+        println!(
+            "{}",
+            t!(
+                "cli.preset_list.entry",
+                name = preset.name,
+                pan = preset.pan,
+                tilt = preset.tilt,
+                zoom = preset.zoom
+            )
+        );
+    }
+}
+
+fn evaluate_preset_delete_arg(name: String, camera: Camera) {
+    match camera.delete_custom_preset(&name) {
+        Ok(_) => println!(
+            "{}",
+            t!("cli.preset_delete.response_to_delete", name = name)
+        ),
+        Err(e) => println!("{}", e),
+    }
 }
 
 fn evaluate_hdr_arg(hdr_mode: Option<OnOffArg>, camera: Camera) {

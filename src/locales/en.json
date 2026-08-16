@@ -12,6 +12,7 @@
     "info": {
       "ai_mode": "AI Mode",
       "camera_status": "Camera status",
+      "custom_presets": "Custom presets",
       "exposure": "Exposure",
       "hdr": "HDR",
       "movement": "Movement",
@@ -62,6 +63,10 @@
       "tilt": {
         "placeholder": "Enter tilt value",
         "apply": "Set"
+      },
+      "custom_presets": {
+        "placeholder": "Preset name",
+        "save": "Save"
       }
     },
     "tooltips": {
@@ -78,6 +83,11 @@
         "turns_off": "Turns off HDR on click"
       },
       "preset": "Sets the cameras position to preset %{preset_number}",
+      "custom_presets": {
+        "save": "Save the current position and zoom",
+        "recall": "Pan: %{pan}  Tilt: %{tilt}  Zoom: %{zoom}",
+        "delete": "Delete this preset"
+      },
       "window_mode": {
         "widget": "Switch to Widget-Mode",
         "dashboard": "Switch to Dashboard-Mode"
@@ -136,6 +146,19 @@
       "response_to_set": "Setting the camera pan to %{value}",
       "current": "Current pan: %{current} (range %{min}-%{max})"
     },
+    "preset_save": {
+      "response_to_save": "Saved custom preset %{name}"
+    },
+    "preset_recall": {
+      "response_to_recall": "Recalling custom preset %{name}"
+    },
+    "preset_list": {
+      "empty": "No custom presets saved",
+      "entry": "%{name}: Pan %{pan}, Tilt %{tilt}, Zoom %{zoom}"
+    },
+    "preset_delete": {
+      "response_to_delete": "Deleted custom preset %{name}"
+    },
     "tilt": {
       "response_to_set": "Setting the camera tilt to %{value}",
       "current": "Current tilt: %{current} (range %{min}-%{max})"
@@ -164,6 +187,10 @@
       "zoom": "Controls the zoom of the camera",
       "pan": "Controls the pan of the camera",
       "tilt": "Controls the tilt of the camera",
+      "preset_save": "Saves the current position and zoom as a custom preset",
+      "preset_recall": "Recalls a saved custom preset",
+      "preset_list": "Lists all saved custom presets",
+      "preset_delete": "Deletes a saved custom preset",
       "info": "Displays information about the current state of the camera",
       "version": "Displays the version of the CLI-tool",
       "completions": "Generates shell-completion scripts for the CLI-tool",

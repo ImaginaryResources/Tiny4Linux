@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 
+use crate::libs::camera::custom_presets::{CustomPreset, CustomPresetStore};
 use crate::libs::camera::enums::{AIMode, ExposureMode, SleepMode, TrackingSpeed};
 use crate::libs::camera::status::CameraStatus;
 use crate::libs::camera::transport::CameraTransport;
@@ -68,6 +69,10 @@ pub trait Tiny2Camera {
     fn get_tilt_absolute(&self) -> Result<i32, T4lError>;
     fn set_tilt_absolute(&self, value: i32) -> Result<(), T4lError>;
     fn get_tilt_range(&self) -> Result<(i32, i32), T4lError>;
+    fn save_custom_preset(&self, name: &str) -> Result<(), T4lError>;
+    fn recall_custom_preset(&self, name: &str) -> Result<(), T4lError>;
+    fn delete_custom_preset(&self, name: &str) -> Result<(), T4lError>;
+    fn get_custom_presets(&self) -> Vec<CustomPreset>;
     fn set_debugging(&mut self, debugging: bool);
 }
 
@@ -179,5 +184,42 @@ impl Tiny2Camera for Camera {
             // are clamped by the driver.
             _ => Ok((-324_000, 324_000)),
         }
+    }
+
+    fn save_custom_preset(&self, name: &str) -> Result<(), T4lError> {
+        let store = CustomPresetStore::new();
+
+        store.save(&CustomPreset {
+            name: name.to_string(),
+            pan: self.get_pan_absolute()?,
+            tilt: self.get_tilt_absolute()?,
+            zoom: self.get_zoom_absolute()?,
+        })
+    }
+
+    fn recall_custom_preset(&self, name: &str) -> Result<(), T4lError> {
+        let store = CustomPresetStore::new();
+
+        let preset = store
+            .load()
+            .into_iter()
+            .find(|p| p.name == name)
+            .ok_or_else(|| T4lError::PresetNotFound(name.to_string()))?;
+
+        self.set_ai_mode(AIMode::NoTracking)?;
+
+        self.set_pan_absolute(preset.pan)?;
+        self.set_tilt_absolute(preset.tilt)?;
+        self.set_zoom_absolute(preset.zoom)?;
+
+        Ok(())
+    }
+
+    fn delete_custom_preset(&self, name: &str) -> Result<(), T4lError> {
+        CustomPresetStore::new().delete(name)
+    }
+
+    fn get_custom_presets(&self) -> Vec<CustomPreset> {
+        CustomPresetStore::new().load()
     }
 }

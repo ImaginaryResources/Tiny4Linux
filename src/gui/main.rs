@@ -13,8 +13,8 @@ use iced::{Length, Size, Subscription, Task, time, window};
 use rust_i18n::{i18n, set_locale, t};
 use std::time::Duration;
 use tiny4linux::{
-    AIMode, Camera, ExposureMode, SUPPORTED_CAMERAS, SleepMode, Tiny2Camera, TrackingSpeed,
-    get_language,
+    AIMode, Camera, CustomPreset, CustomPresetStore, ExposureMode, SUPPORTED_CAMERAS, SleepMode,
+    Tiny2Camera, TrackingSpeed, get_language,
 };
 
 i18n!("src/locales", fallback = "en");
@@ -36,6 +36,10 @@ enum Message {
     ChangePanText(String),
     ChangeTilt(i32),
     ChangeTiltText(String),
+    CustomPresetName(String),
+    SaveCustomPreset,
+    RecallCustomPreset(String),
+    DeleteCustomPreset(String),
     ChangeDebugging(bool),
     TextInput(String),
     TextInput02(String),
@@ -66,6 +70,8 @@ struct MainPanel {
     tilt_min: i32,
     tilt_max: i32,
     tilt_text: String,
+    custom_presets: Vec<CustomPreset>,
+    custom_preset_name: String,
     debugging_on: bool,
     text_input: String,
     text_input_02: String,
@@ -89,6 +95,11 @@ impl MainPanel {
         let tilt_range = camera.as_ref().and_then(|c| c.get_tilt_range().ok());
         let tilt = camera.as_ref().and_then(|c| c.get_tilt_absolute().ok());
 
+        let custom_presets = camera
+            .as_ref()
+            .map(|c| c.get_custom_presets())
+            .unwrap_or_default();
+
         (
             MainPanel {
                 camera,
@@ -110,6 +121,8 @@ impl MainPanel {
                 tilt_min: tilt_range.map(|r| r.0).unwrap_or(0),
                 tilt_max: tilt_range.map(|r| r.1).unwrap_or(0),
                 tilt_text: tilt.map(|t| t.to_string()).unwrap_or_default(),
+                custom_presets,
+                custom_preset_name: String::new(),
                 debugging_on: false,
                 text_input: String::new(),
                 text_input_02: String::new(),
@@ -222,6 +235,54 @@ impl MainPanel {
             }
             Message::ChangeTiltText(s) => {
                 self.tilt_text = s;
+                Task::none()
+            }
+            Message::CustomPresetName(s) => {
+                self.custom_preset_name = s;
+                Task::none()
+            }
+            Message::SaveCustomPreset => {
+                let store = CustomPresetStore::new();
+
+                if !self.custom_preset_name.trim().is_empty()
+                    && let (Some(pan), Some(tilt), Some(zoom)) = (self.pan, self.tilt, self.zoom)
+                {
+                    store
+                        .save(&CustomPreset {
+                            name: self.custom_preset_name.clone(),
+                            pan,
+                            tilt,
+                            zoom,
+                        })
+                        .unwrap();
+
+                    self.custom_presets = store.load();
+                    self.custom_preset_name.clear();
+                }
+
+                Task::none()
+            }
+            Message::RecallCustomPreset(name) => {
+                camera.recall_custom_preset(&name).unwrap();
+
+                let store = CustomPresetStore::new();
+                let preset = store.load().into_iter().find(|p| p.name == name).unwrap();
+
+                self.tracking = AIMode::NoTracking;
+                self.awake = SleepMode::Awake;
+                self.pan = Some(preset.pan);
+                self.pan_text = preset.pan.to_string();
+                self.tilt = Some(preset.tilt);
+                self.tilt_text = preset.tilt.to_string();
+                self.zoom = Some(preset.zoom);
+                self.zoom_text = preset.zoom.to_string();
+
+                Task::none()
+            }
+            Message::DeleteCustomPreset(name) => {
+                let store = CustomPresetStore::new();
+                store.delete(&name).unwrap();
+                self.custom_presets = store.load();
                 Task::none()
             }
             Message::ChangeDebugging(new_mode) => {

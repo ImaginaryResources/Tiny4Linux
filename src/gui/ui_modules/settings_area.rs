@@ -20,6 +20,7 @@ pub fn settings_area(app: &MainPanel) -> Container<'static, Message> {
     container(
         column![
             presets(),
+            custom_presets(app),
             horizontal_rule(8),
             tracking_modes(app.window_mode == WindowMode::Widget, app.tracking),
             tracking_speed(app.tracking_speed),
@@ -63,6 +64,69 @@ fn presets() -> Row<'static, Message> {
             .width(Length::FillPortion(6)),
         horizontal_space().width(Length::FillPortion(2))
     ]
+}
+
+fn custom_presets(app: &MainPanel) -> Container<'static, Message> {
+    let can_save = !app.custom_preset_name.trim().is_empty()
+        && app.pan.is_some()
+        && app.tilt.is_some()
+        && app.zoom.is_some();
+
+    container(
+        column![
+            text(format!("{}:", t!("shared.info.custom_presets"))),
+            row![
+                text_input(
+                    t!("gui.text.custom_presets.placeholder").as_ref(),
+                    &app.custom_preset_name
+                )
+                .on_input(Message::CustomPresetName)
+                .width(Length::FillPortion(3)),
+                tooltip(
+                    button(text(t!("gui.text.custom_presets.save")))
+                        .on_press_maybe(can_save.then_some(Message::SaveCustomPreset))
+                        .width(Length::FillPortion(1)),
+                    tooltip_content(container(text(t!("gui.tooltips.custom_presets.save")))),
+                    Position::Bottom,
+                ),
+            ]
+            .spacing(10)
+            .align_y(Vertical::Center),
+            app.custom_presets
+                .iter()
+                .fold(column![], |c, preset| {
+                    c.push(
+                        row![
+                            tooltip(
+                                button(text(preset.name.clone()))
+                                    .on_press(Message::RecallCustomPreset(preset.name.clone()))
+                                    .width(Length::Fill),
+                                tooltip_content(container(text(t!(
+                                    "gui.tooltips.custom_presets.recall",
+                                    pan = preset.pan,
+                                    tilt = preset.tilt,
+                                    zoom = preset.zoom
+                                )))),
+                                Position::Bottom,
+                            ),
+                            tooltip(
+                                button(fa_icon_solid("xmark"))
+                                    .on_press(Message::DeleteCustomPreset(preset.name.clone())),
+                                tooltip_content(container(text(t!(
+                                    "gui.tooltips.custom_presets.delete"
+                                )))),
+                                Position::Bottom,
+                            ),
+                        ]
+                        .spacing(10)
+                        .align_y(Vertical::Center),
+                    )
+                })
+                .spacing(10)
+        ]
+        .spacing(10)
+        .width(Length::Fill),
+    )
 }
 
 fn tracking_modes(reduced: bool, current_mode: AIMode) -> Container<'static, Message> {
